@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Optional
 
 import bcrypt
-from anthropic import Anthropic
+from openai import OpenAI
 from fastapi import FastAPI, Request, Form, Depends, HTTPException, status, Cookie
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -26,7 +26,7 @@ BASE_DIR = Path(__file__).parent
 DB_PATH = BASE_DIR / "tutor_match.db"
 ADMIN_USER = os.getenv("ADMIN_USER", "admin")
 ADMIN_PASS = os.getenv("ADMIN_PASS", "changeme")
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
 SESSION_SECRET = os.getenv("SESSION_SECRET", secrets.token_hex(32))
 
 # 标准化词表 - 用于筛选下拉框和数据归一
@@ -130,19 +130,21 @@ PARSE_SYSTEM_PROMPT = """你是一个家教订单解析助手。用户会贴给�
 
 
 def parse_orders_from_text(raw_text: str) -> list[dict]:
-    """调用 Claude API 把群聊文本拆成结构化单子"""
-    if not ANTHROPIC_API_KEY:
-        raise RuntimeError("未配置 ANTHROPIC_API_KEY")
-    
-    client = Anthropic(api_key=ANTHROPIC_API_KEY)
-    response = client.messages.create(
-        model="claude-haiku-4-5-20251001",
+    """调用 DeepSeek API 把群聊文本拆成结构化单子"""
+    if not DEEPSEEK_API_KEY:
+        raise RuntimeError("未配置 DEEPSEEK_API_KEY")
+
+    client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
+    response = client.chat.completions.create(
+        model="deepseek-chat",
         max_tokens=4096,
-        system=PARSE_SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": raw_text}],
+        messages=[
+            {"role": "system", "content": PARSE_SYSTEM_PROMPT},
+            {"role": "user", "content": raw_text},
+        ],
     )
-    
-    text = response.content[0].text.strip()
+
+    text = response.choices[0].message.content.strip()
     # 兜底：如果模型还是用了代码块就剥掉
     if text.startswith("```"):
         text = text.split("```")[1]
