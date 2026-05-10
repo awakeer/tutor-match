@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理后台 - 家教订单匹配</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<nav>
+  <span class="brand">管理后台</span>
+  <div class="nav-links">
+    <a href="/">返回首页</a>
+  </div>
+</nav>
+
+<div class="container">
+<h2 style="margin-bottom:20px">仪表盘</h2>
+
+<div class="stats">
+  <div class="stat"><div class="num">{{ order_count }}</div><div class="label">在挂订单</div></div>
+  <div class="stat"><div class="num">{{ tutor_count }}</div><div class="label">注册老师</div></div>
+  <div class="stat"><div class="num">{{ pending_apps }}</div><div class="label">待处理申请</div></div>
+</div>
+
+<div class="admin-nav">
+  <a href="/admin/import">LLM 拆单入库</a>
+  <a href="/admin/orders">订单管理</a>
+  <a href="/admin/applications">申请管理</a>
+  <a href="/admin/tutors">老师列表</a>
+</div>
+</div>
+</body>
+</html>

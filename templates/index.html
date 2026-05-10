@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>家教订单匹配</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand">家教订单匹配</a>
+  <div class="nav-links">
+    {% if tutor %}
+      <span>{{ tutor.real_name }}</span>
+      <form method="post" action="/logout" style="margin:0"><button type="submit">退出</button></form>
+    {% else %}
+      <a href="/login">登录</a>
+      <a href="/register">注册</a>
+    {% endif %}
+  </div>
+</nav>
+
+<div class="container">
+
+{% if request.query_params.get("applied") %}
+<div class="flash">申请成功，管理员将通过您注册时预留的联系方式联系您。</div>
+{% endif %}
+
+<h2 style="margin-bottom:16px;font-size:22px">家教订单列表</h2>
+
+<form class="filters" method="get">
+  <select name="level">
+    <option value="">全部学段</option>
+    {% for l in LEVELS %}<option value="{{ l }}" {% if filters.level==l %}selected{% endif %}>{{ l }}</option>{% endfor %}
+  </select>
+  <select name="subject">
+    <option value="">全部科目</option>
+    {% for s in SUBJECTS %}<option value="{{ s }}" {% if filters.subject==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+  </select>
+  <select name="district">
+    <option value="">全部区域</option>
+    {% for d in DISTRICTS %}<option value="{{ d }}" {% if filters.district==d %}selected{% endif %}>{{ d }}</option>{% endfor %}
+  </select>
+  <select name="time_slot">
+    <option value="">全部时段</option>
+    {% for t in TIME_SLOTS %}<option value="{{ t }}" {% if filters.time_slot==t %}selected{% endif %}>{{ t }}</option>{% endfor %}
+  </select>
+  <input type="number" name="min_price" placeholder="最低时薪" value="{{ filters.min_price if filters.min_price else '' }}" style="width:100px">
+  <select name="sort">
+    <option value="newest" {% if filters.sort=='newest' %}selected{% endif %}>最新优先</option>
+    <option value="price" {% if filters.sort=='price' %}selected{% endif %}>价格高优先</option>
+  </select>
+  <button type="submit">筛选</button>
+</form>
+
+{% if orders %}
+  {% for o in orders %}
+  <div class="card order">
+    <div class="header">
+      <span class="title">{{ o.level }} {{ o.subject }} {% if o.grade %}({{ o.grade }}){% endif %}</span>
+      <span class="price">{% if o.price_per_hour %}¥{{ o.price_per_hour }}/时{% else %}价格未标注{% endif %}</span>
+    </div>
+    <div class="meta">
+      <span>📍 {{ o.district or '区域不限' }}</span>
+      <span>🕐 {{ ', '.join(o.time_slots_list) if o.time_slots_list else '时间未定' }}</span>
+    </div>
+    {% if o.requirements %}<div class="requirements">{{ o.requirements }}</div>{% endif %}
+    {% if o.parent_contact %}<div class="contact">📞 联系：{{ o.parent_contact }}</div>{% endif %}
+    <div class="meta" style="margin-top:6px">发布时间：{{ o.created_at }}</div>
+    {% if tutor %}
+      {% if o.id in applied_ids %}
+        <button class="apply-btn" disabled>已申请</button>
+      {% else %}
+        <form method="post" action="/apply/{{ o.id }}" style="display:inline">
+          <button type="submit" class="apply-btn">申请接单</button>
+        </form>
+      {% endif %}
+    {% else %}
+      <a href="/login" style="font-size:13px;color:#4a6cf7">登录后申请</a>
+    {% endif %}
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="empty"><p>暂无匹配的订单</p></div>
+{% endif %}
+
+</div>
+</body>
+</html>

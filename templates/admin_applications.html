@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>申请管理 - 管理后台</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<nav>
+  <span class="brand">管理后台</span>
+  <div class="nav-links"><a href="/admin">仪表盘</a><a href="/">返回首页</a></div>
+</nav>
+
+<div class="container">
+<h2 style="margin-bottom:20px">申请管理</h2>
+
+<div class="admin-nav">
+  <a href="/admin/import">LLM 拆单入库</a>
+  <a href="/admin/orders">订单管理</a>
+  <a href="/admin/applications" class="active">申请管理</a>
+  <a href="/admin/tutors">老师列表</a>
+</div>
+
+{% if apps %}
+<table class="card">
+<thead>
+<tr>
+  <th>ID</th><th>状态</th><th>老师</th><th>手机</th><th>订单</th><th>时薪</th><th>区域</th><th>留言</th><th>时间</th><th>操作</th>
+</tr>
+</thead>
+<tbody>
+{% for a in apps %}
+<tr>
+  <td>{{ a.id }}</td>
+  <td><span class="badge {% if a.handled %}badge-handled{% else %}badge-open{% endif %}">{{ '已处理' if a.handled else '待处理' }}</span></td>
+  <td>{{ a.real_name }}</td>
+  <td>{{ a.phone }}</td>
+  <td>{{ a.level }} {{ a.subject }} {{ a.grade or '' }}</td>
+  <td>{% if a.price_per_hour %}¥{{ a.price_per_hour }}{% else %}-{% endif %}</td>
+  <td>{{ a.district or '-' }}</td>
+  <td>{{ a.message or '-' }}</td>
+  <td>{{ a.created_at[:10] }}</td>
+  <td>
+    {% if not a.handled %}
+    <form method="post" action="/admin/applications/{{ a.id }}/handle" style="display:inline">
+      <button type="submit" class="btn-sm btn-success">标记处理</button>
+    </form>
+    {% endif %}
+  </td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+{% else %}
+<div class="empty"><p>暂无申请</p></div>
+{% endif %}
+
+</div>
+</body>
+</html>

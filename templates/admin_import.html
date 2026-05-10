@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM 拆单入库 - 管理后台</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<nav>
+  <span class="brand">管理后台</span>
+  <div class="nav-links"><a href="/admin">仪表盘</a><a href="/">返回首页</a></div>
+</nav>
+
+<div class="container">
+<h2 style="margin-bottom:20px">LLM 拆单入库</h2>
+
+<div class="admin-nav">
+  <a href="/admin/import" class="active">LLM 拆单入库</a>
+  <a href="/admin/orders">订单管理</a>
+  <a href="/admin/applications">申请管理</a>
+  <a href="/admin/tutors">老师列表</a>
+</div>
+
+<div class="card import-area">
+  <p style="margin-bottom:12px;color:#666">粘贴微信群聊文本，Claude 会自动提取家教需求并生成结构化订单。</p>
+  <textarea id="rawText" placeholder="在此粘贴群聊记录...&#10;&#10;例如：&#10;家长A：高一数学，海淀，200/h，周末白天，要求有经验&#10;家长B：初三物理化学，朝阳，150/h"></textarea>
+  <button id="parseBtn" onclick="doParse()">解析预览</button>
+  <span id="parseStatus" style="margin-left:12px;font-size:14px;color:#888"></span>
+</div>
+
+<div id="previewArea"></div>
+
+<div id="importArea" style="display:none;margin-top:20px;text-align:center">
+  <button id="importBtn" class="btn-sm btn-success" style="font-size:16px;padding:12px 40px" onclick="doImport()">确认导入</button>
+</div>
+
+</div>
+
+<script>
+let parsedOrders = [];
+
+async function doParse() {
+  const raw = document.getElementById('rawText').value.trim();
+  if (!raw) return alert('请先粘贴群聊文本');
+
+  document.getElementById('parseBtn').disabled = true;
+  document.getElementById('parseStatus').textContent = '正在调用 Claude 解析...';
+  document.getElementById('previewArea').innerHTML = '';
+  document.getElementById('importArea').style.display = 'none';
+
+  try {
+    const form = new FormData();
+    form.append('raw_text', raw);
+    const resp = await fetch('/admin/parse', { method: 'POST', body: form });
+    const data = await resp.json();
+
+    if (data.error) {
+      document.getElementById('parseStatus').textContent = '解析失败: ' + data.error;
+    } else if (!data.orders || data.orders.length === 0) {
+      document.getElementById('parseStatus').textContent = '未检测到家教需求。';
+    } else {
+      parsedOrders = data.orders;
+      document.getElementById('parseStatus').textContent = `识别到 ${parsedOrders.length} 条订单，请审核：`;
+      renderPreview(parsedOrders);
+      document.getElementById('importArea').style.display = 'block';
+    }
+  } catch (e) {
+    document.getElementById('parseStatus').textContent = '网络错误: ' + e.message;
+  }
+  document.getElementById('parseBtn').disabled = false;
+}
+
+function renderPreview(orders) {
+  let html = '';
+  orders.forEach((o, i) => {
+    html += `<div class="card preview-card">
+      <div class="header">
+        <strong>#${i+1} ${o.level || '?'} ${o.subject || '?'} ${o.grade || ''}</strong>
+        <span class="badge badge-open">待导入</span>
+      </div>
+      <div class="details">
+        区域: ${o.district || '未标注'} &nbsp;|&nbsp; 时薪: ${o.price_per_hour ? '¥' + o.price_per_hour + '/时' : '未标注'} <br>
+        时段: ${o.time_slots ? o.time_slots.join(', ') : '未定'} <br>
+        要求: ${o.requirements || '无特殊要求'} <br>
+        联系: ${o.parent_contact || '无'} <br>
+        <span style="color:#aaa;font-size:12px">原文: ${(o.raw_text || '').substring(0, 100)}</span>
+      </div>
+    </div>`;
+  });
+  document.getElementById('previewArea').innerHTML = html;
+}
+
+async function doImport() {
+  if (!parsedOrders.length) return;
+
+  document.getElementById('importBtn').disabled = true;
+  const form = new FormData();
+  form.append('orders_json', JSON.stringify(parsedOrders));
+  try {
+    const resp = await fetch('/admin/import', { method: 'POST', body: form });
+    window.location.href = resp.url;  // 跳转到带 imported 参数的订单页
+  } catch (e) {
+    alert('导入失败: ' + e.message);
+    document.getElementById('importBtn').disabled = false;
+  }
+}
+</script>
+</body>
+</html>

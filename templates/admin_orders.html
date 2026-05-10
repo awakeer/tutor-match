@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>订单管理 - 管理后台</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<nav>
+  <span class="brand">管理后台</span>
+  <div class="nav-links"><a href="/admin">仪表盘</a><a href="/">返回首页</a></div>
+</nav>
+
+<div class="container">
+
+{% if request.query_params.get("imported") %}
+<div class="flash">成功导入 {{ request.query_params.get("imported") }} 条订单</div>
+{% endif %}
+
+<h2 style="margin-bottom:20px">订单管理</h2>
+
+<div class="admin-nav">
+  <a href="/admin/import">LLM 拆单入库</a>
+  <a href="/admin/orders" class="active">订单管理</a>
+  <a href="/admin/applications">申请管理</a>
+  <a href="/admin/tutors">老师列表</a>
+</div>
+
+{% if orders %}
+<table class="card">
+<thead>
+<tr>
+  <th>ID</th><th>学段</th><th>科目</th><th>年级</th><th>区域</th><th>时薪</th><th>时段</th><th>状态</th><th>操作</th>
+</tr>
+</thead>
+<tbody>
+{% for o in orders %}
+<tr>
+  <td>{{ o.id }}</td>
+  <td>{{ o.level or '-' }}</td>
+  <td>{{ o.subject or '-' }}</td>
+  <td>{{ o.grade or '-' }}</td>
+  <td>{{ o.district or '-' }}</td>
+  <td>{% if o.price_per_hour %}¥{{ o.price_per_hour }}{% else %}-{% endif %}</td>
+  <td>{{ ', '.join(o.time_slots_list) if o.time_slots_list else '-' }}</td>
+  <td><span class="badge {% if o.status=='open' %}badge-open{% else %}badge-closed{% endif %}">{{ o.status }}</span></td>
+  <td>
+    {% if o.status == 'open' %}
+    <form method="post" action="/admin/orders/{{ o.id }}/close" style="display:inline">
+      <button type="submit" class="btn-sm btn-primary">关闭</button>
+    </form>
+    {% endif %}
+    <form method="post" action="/admin/orders/{{ o.id }}/delete" style="display:inline" onsubmit="return confirm('确认删除？')">
+      <button type="submit" class="btn-sm btn-danger">删除</button>
+    </form>
+  </td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+{% else %}
+<div class="empty"><p>暂无订单</p></div>
+{% endif %}
+
+</div>
+</body>
+</html>

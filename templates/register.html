@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>注册 - 家教订单匹配</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="container">
+<div class="card auth-form">
+  <h2>老师注册</h2>
+  {% if error %}<div class="error">{{ error }}</div>{% endif %}
+  <form method="post">
+    <input type="text" name="username" placeholder="用户名（字母、数字）" required>
+    <input type="password" name="password" placeholder="密码（至少6位）" required minlength="6">
+    <input type="text" name="real_name" placeholder="真实姓名" required>
+    <input type="text" name="phone" placeholder="手机号" required>
+    <button type="submit">注册</button>
+  </form>
+  <div class="switch">已有账号？<a href="/login">去登录</a></div>
+</div>
+</div>
+</body>
+</html>
