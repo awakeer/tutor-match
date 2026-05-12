@@ -67,6 +67,12 @@
     </div>
     {% if o.requirements %}<div class="requirements">{{ o.requirements }}</div>{% endif %}
     {% if o.parent_contact %}<div class="contact">📞 联系：{{ o.parent_contact }}</div>{% endif %}
+    {% if o.raw_text %}
+    <details class="raw-detail">
+      <summary>查看原始需求</summary>
+      <div class="raw-text">{{ o.raw_text }}</div>
+    </details>
+    {% endif %}
     <div class="meta" style="margin-top:6px">发布时间：{{ o.created_at }}</div>
     {% if tutor %}
       {% if o.id in applied_ids %}

@@ -79,6 +79,11 @@ th { background: #fafbfc; font-weight: 600; color: #555; }
 .empty { text-align: center; padding: 60px 0; color: #aaa; }
 .empty p { font-size: 16px; }
 
+.raw-detail { margin-top: 8px; }
+.raw-detail summary { cursor: pointer; font-size: 13px; color: #4a6cf7; user-select: none; }
+.raw-detail summary:hover { color: #3b5de7; }
+.raw-text { margin-top: 8px; padding: 12px; background: #fafbfc; border-left: 3px solid #4a6cf7; border-radius: 4px; font-size: 13px; color: #555; white-space: pre-wrap; line-height: 1.5; }
+
 @media (max-width: 600px) {
   .filters { flex-direction: column; }
   .stats { flex-direction: column; }

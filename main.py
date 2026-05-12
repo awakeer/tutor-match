@@ -110,7 +110,7 @@ PARSE_SYSTEM_PROMPT = """你是一个家教订单解析助手。用户会贴给�
 每条单子的结构：
 {
   "level": "小学|初中|高中",
-  "subject": "语文|数学|英语|物理|化学|生物|历史|地理|政治|其他",
+  "subject": "科目，从'语文|数学|英语|物理|化学|生物|历史|地理|政治|其他'中选。若同时涉及多科，用中文逗号'、'分隔，如'数学、物理'",
   "grade": "具体年级，如'高二''初三''小学五年级'",
   "district": "区域，提取到区级别，如'海淀''朝阳'，没提到填null",
   "price_per_hour": 时薪整数（元/小时），没提到填null。如果给的是总价或日价要尝试换算
@@ -122,7 +122,7 @@ PARSE_SYSTEM_PROMPT = """你是一个家教订单解析助手。用户会贴给�
 
 重要规则：
 1. 严格输出 JSON 数组，不要解释、不要markdown代码块、不要其他文字
-2. 拆单粒度：一条家教需求一条记录。如果一个家长同时发了"高一数学+物理"，拆成两条
+2. 拆单粒度：一个家长的一次完整发言算一条需求。如果同时提到多门科目（如"数学+物理"），不要拆成多条，而是合并到一个subject字段里用"、"分隔
 3. 只提取家长发布的需求。老师的自我推荐、群主的通知、闲聊广告全部跳过
 4. 字段不确定就填null，不要瞎猜
 5. 如果整段文本里没有任何家教需求，输出空数组 []
@@ -235,8 +235,8 @@ def index(
         sql += " AND level = ?"
         params.append(level)
     if subject:
-        sql += " AND subject = ?"
-        params.append(subject)
+        sql += " AND subject LIKE ?"
+        params.append(f"%{subject}%")
     if district:
         sql += " AND district = ?"
         params.append(district)
