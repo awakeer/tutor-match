@@ -16,7 +16,7 @@ from openai import OpenAI
 from fastapi import FastAPI, Request, Form, Depends, HTTPException, status, Cookie
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
+from jinja2 import Environment, FileSystemLoader
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -204,7 +204,13 @@ def require_admin(request: Request):
 # ---------- FastAPI 应用 ----------
 app = FastAPI(title="家教订单匹配系统")
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
-templates = Jinja2Templates(directory=BASE_DIR / "templates")
+templates = Environment(loader=FileSystemLoader(BASE_DIR / "templates"))
+
+
+def render(name: str, status_code: int = 200, **kwargs) -> HTMLResponse:
+    """用 Jinja2 直接渲染，绕过 Starlette 的模板缓存 bug"""
+    template = templates.get_template(name)
+    return HTMLResponse(template.render(**kwargs), status_code=status_code)
 
 init_db()
 
@@ -217,7 +223,7 @@ def index(
     subject: str = "",
     district: str = "",
     time_slot: str = "",
-    min_price: int = 0,
+    min_price: str = "",
     sort: str = "newest",
     tutor=Depends(get_current_tutor),
 ):
@@ -237,9 +243,9 @@ def index(
     if time_slot:
         sql += " AND time_slots LIKE ?"
         params.append(f"%{time_slot}%")
-    if min_price > 0:
+    if min_price:
         sql += " AND price_per_hour >= ?"
-        params.append(min_price)
+        params.append(int(min_price))
     
     if sort == "price":
         sql += " ORDER BY price_per_hour DESC NULLS LAST, created_at DESC"
@@ -264,25 +270,21 @@ def index(
         except Exception:
             o["time_slots_list"] = []
     
-    return templates.TemplateResponse("index.html", {
-        "request": request,
-        "orders": orders,
-        "tutor": tutor,
-        "applied_ids": applied_ids,
-        "filters": {
-            "level": level, "subject": subject, "district": district,
-            "time_slot": time_slot, "min_price": min_price, "sort": sort,
-        },
-        "LEVELS": LEVELS,
-        "SUBJECTS": SUBJECTS,
-        "DISTRICTS": DISTRICTS,
-        "TIME_SLOTS": TIME_SLOTS,
-    })
+    return render("index.html",
+        request=request,
+        orders=orders,
+        tutor=tutor,
+        applied_ids=applied_ids,
+        LEVELS=LEVELS,
+        SUBJECTS=SUBJECTS,
+        DISTRICTS=DISTRICTS,
+        TIME_SLOTS=TIME_SLOTS,
+    )
 
 
 @app.get("/register", response_class=HTMLResponse)
 def register_page(request: Request):
-    return templates.TemplateResponse("register.html", {"request": request, "error": None})
+    return render("register.html", request=request, error=None)
 
 
 @app.post("/register")
@@ -293,11 +295,7 @@ def register(
     phone: str = Form(...),
 ):
     if len(password) < 6:
-        return templates.TemplateResponse(
-            "register.html",
-            {"request": Request, "error": "密码至少6位"},
-            status_code=400,
-        )
+        return render("register.html", status_code=400, request=None, error="密码至少6位")
     with get_db() as conn:
         try:
             cur = conn.execute(
@@ -319,7 +317,7 @@ def register(
 
 @app.get("/login", response_class=HTMLResponse)
 def login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request, "error": None})
+    return render("login.html", request=request, error=None)
 
 
 @app.post("/login")
@@ -327,11 +325,7 @@ def login(request: Request, username: str = Form(...), password: str = Form(...)
     with get_db() as conn:
         row = conn.execute("SELECT * FROM tutors WHERE username = ?", (username,)).fetchone()
         if not row or not verify_password(password, row["password_hash"]):
-            return templates.TemplateResponse(
-                "login.html",
-                {"request": request, "error": "用户名或密码错误"},
-                status_code=400,
-            )
+            return render("login.html", status_code=400, request=request, error="用户名或密码错误")
         token = secrets.token_urlsafe(32)
         conn.execute("INSERT INTO sessions (token, tutor_id) VALUES (?, ?)", (token, row["id"]))
     resp = RedirectResponse("/", status_code=302)
@@ -373,17 +367,17 @@ def admin_home(request: Request, _=Depends(require_admin)):
         order_count = conn.execute("SELECT COUNT(*) c FROM orders WHERE status='open'").fetchone()["c"]
         tutor_count = conn.execute("SELECT COUNT(*) c FROM tutors").fetchone()["c"]
         pending_apps = conn.execute("SELECT COUNT(*) c FROM applications WHERE handled=0").fetchone()["c"]
-    return templates.TemplateResponse("admin.html", {
-        "request": request,
-        "order_count": order_count,
-        "tutor_count": tutor_count,
-        "pending_apps": pending_apps,
-    })
+    return render("admin.html",
+        request=request,
+        order_count=order_count,
+        tutor_count=tutor_count,
+        pending_apps=pending_apps,
+    )
 
 
 @app.get("/admin/import", response_class=HTMLResponse)
 def admin_import_page(request: Request, _=Depends(require_admin)):
-    return templates.TemplateResponse("admin_import.html", {"request": request})
+    return render("admin_import.html", request=request)
 
 
 @app.post("/admin/parse")
@@ -438,7 +432,7 @@ def admin_orders(request: Request, _=Depends(require_admin)):
             o["time_slots_list"] = json.loads(o["time_slots"]) if o["time_slots"] else []
         except Exception:
             o["time_slots_list"] = []
-    return templates.TemplateResponse("admin_orders.html", {"request": request, "orders": orders})
+    return render("admin_orders.html", request=request, orders=orders)
 
 
 @app.post("/admin/orders/{order_id}/close")
@@ -469,7 +463,7 @@ def admin_applications(request: Request, _=Depends(require_admin)):
             ORDER BY a.handled ASC, a.created_at DESC
         """).fetchall()
         apps = [dict(r) for r in rows]
-    return templates.TemplateResponse("admin_applications.html", {"request": request, "apps": apps})
+    return render("admin_applications.html", request=request, apps=apps)
 
 
 @app.post("/admin/applications/{app_id}/handle")
@@ -485,7 +479,7 @@ def admin_tutors(request: Request, _=Depends(require_admin)):
         tutors = [dict(r) for r in conn.execute(
             "SELECT * FROM tutors ORDER BY created_at DESC"
         ).fetchall()]
-    return templates.TemplateResponse("admin_tutors.html", {"request": request, "tutors": tutors})
+    return render("admin_tutors.html", request=request, tutors=tutors)
 
 
 if __name__ == "__main__":

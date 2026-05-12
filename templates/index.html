@@ -32,24 +32,24 @@
 <form class="filters" method="get">
   <select name="level">
     <option value="">全部学段</option>
-    {% for l in LEVELS %}<option value="{{ l }}" {% if filters.level==l %}selected{% endif %}>{{ l }}</option>{% endfor %}
+    {% for l in LEVELS %}<option value="{{ l }}" {% if request.query_params.get('level', '')==l %}selected{% endif %}>{{ l }}</option>{% endfor %}
   </select>
   <select name="subject">
     <option value="">全部科目</option>
-    {% for s in SUBJECTS %}<option value="{{ s }}" {% if filters.subject==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+    {% for s in SUBJECTS %}<option value="{{ s }}" {% if request.query_params.get('subject', '')==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
   </select>
   <select name="district">
     <option value="">全部区域</option>
-    {% for d in DISTRICTS %}<option value="{{ d }}" {% if filters.district==d %}selected{% endif %}>{{ d }}</option>{% endfor %}
+    {% for d in DISTRICTS %}<option value="{{ d }}" {% if request.query_params.get('district', '')==d %}selected{% endif %}>{{ d }}</option>{% endfor %}
   </select>
   <select name="time_slot">
     <option value="">全部时段</option>
-    {% for t in TIME_SLOTS %}<option value="{{ t }}" {% if filters.time_slot==t %}selected{% endif %}>{{ t }}</option>{% endfor %}
+    {% for t in TIME_SLOTS %}<option value="{{ t }}" {% if request.query_params.get('time_slot', '')==t %}selected{% endif %}>{{ t }}</option>{% endfor %}
   </select>
-  <input type="number" name="min_price" placeholder="最低时薪" value="{{ filters.min_price if filters.min_price else '' }}" style="width:100px">
+  <input type="number" name="min_price" placeholder="最低时薪" value="{{ request.query_params.get('min_price', '') if request.query_params.get('min_price', '') else '' }}" style="width:100px">
   <select name="sort">
-    <option value="newest" {% if filters.sort=='newest' %}selected{% endif %}>最新优先</option>
-    <option value="price" {% if filters.sort=='price' %}selected{% endif %}>价格高优先</option>
+    <option value="newest" {% if request.query_params.get('sort', '')=='newest' %}selected{% endif %}>最新优先</option>
+    <option value="price" {% if request.query_params.get('sort', '')=='price' %}selected{% endif %}>价格高优先</option>
   </select>
   <button type="submit">筛选</button>
 </form>
