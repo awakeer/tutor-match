@@ -31,7 +31,7 @@ SESSION_SECRET = os.getenv("SESSION_SECRET", secrets.token_hex(32))
 
 # 标准化词表 - 用于筛选下拉框和数据归一
 LEVELS = ["小学", "初中", "高中"]
-SUBJECTS = ["语文", "数学", "英语", "物理", "化学", "生物", "历史", "地理", "政治", "其他"]
+SUBJECTS = ["语文", "数学", "英语", "科学", "物理", "化学", "生物", "历史", "地理", "政治", "技术", "其他"]
 DISTRICTS = ["上城", "拱墅", "西湖", "滨江", "萧山", "余杭", "临平", "钱塘", "富阳", "临安", "桐庐", "淳安", "建德", "其他"]
 TIME_SLOTS = ["工作日白天", "工作日晚上", "周末白天", "周末晚上"]
 
@@ -110,7 +110,7 @@ PARSE_SYSTEM_PROMPT = """你是一个家教订单解析助手。用户会贴给�
 每条单子的结构：
 {
   "level": "小学|初中|高中",
-  "subject": "科目，从'语文|数学|英语|物理|化学|生物|历史|地理|政治|其他'中选。若同时涉及多科，用中文逗号'、'分隔，如'数学、物理'",
+  "subject": "科目，从'语文|数学|英语|科学|物理|化学|生物|历史|地理|政治|技术|其他'中选。若同时涉及多科，用中文逗号'、'分隔，如'数学、物理'。注意浙江初中物理化学生物合称'科学'，高中有'技术'科目",
   "grade": "具体年级，如'高二''初三''小学五年级'",
   "district": "区域，提取到区级别，如'海淀''朝阳'，没提到填null",
   "price_per_hour": 时薪整数（元/小时），没提到填null。如果给的是总价或日价要尝试换算
@@ -223,7 +223,6 @@ def index(
     subject: str = "",
     district: str = "",
     time_slot: str = "",
-    min_price: str = "",
     sort: str = "newest",
     tutor=Depends(get_current_tutor),
 ):
@@ -243,10 +242,6 @@ def index(
     if time_slot:
         sql += " AND time_slots LIKE ?"
         params.append(f"%{time_slot}%")
-    if min_price:
-        sql += " AND price_per_hour >= ?"
-        params.append(int(min_price))
-    
     if sort == "price":
         sql += " ORDER BY price_per_hour DESC NULLS LAST, created_at DESC"
     else:

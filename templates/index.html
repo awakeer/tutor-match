@@ -46,8 +46,7 @@
     <option value="">全部时段</option>
     {% for t in TIME_SLOTS %}<option value="{{ t }}" {% if request.query_params.get('time_slot', '')==t %}selected{% endif %}>{{ t }}</option>{% endfor %}
   </select>
-  <input type="number" name="min_price" placeholder="最低时薪" value="{{ request.query_params.get('min_price', '') if request.query_params.get('min_price', '') else '' }}" style="width:100px">
-  <select name="sort">
+<select name="sort">
     <option value="newest" {% if request.query_params.get('sort', '')=='newest' %}selected{% endif %}>最新优先</option>
     <option value="price" {% if request.query_params.get('sort', '')=='price' %}selected{% endif %}>价格高优先</option>
   </select>
